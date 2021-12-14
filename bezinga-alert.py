@@ -127,7 +127,8 @@ def search_premarket(sc):
     newStock = difference[uid].tolist()
     #print(difference['df2_only'])
     if bool(difference['df2_only'].empty):
-        print("None")
+        dtt = datetime.datetime.now()
+        print(dtt + ' - ' + "None")
     else:
         winsound.Beep(freq, duration)
         #Testing the input data
