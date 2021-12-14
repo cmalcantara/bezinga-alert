@@ -7,6 +7,7 @@ import pandas as pd
 import winsound
 import requests
 import sys
+import datetime
 import sched, time
 from bs4 import BeautifulSoup
 from collections import OrderedDict as od
@@ -135,6 +136,7 @@ def search_premarket(sc):
         print(df2)
         print("\n")
 
+        print(datetime.datetime.now())
         print(difference['df2_only'])
         print("\n\n")
 
@@ -142,6 +144,9 @@ def search_premarket(sc):
 
     s.enter(waitTime, 1, search_premarket, (s,))
 
+#TODO
+#add timestamp
+#add txt file output
 try:
     #Getting Data & Preprocessing
     waitTime = int(sys.argv[2])
