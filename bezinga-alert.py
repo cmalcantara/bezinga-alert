@@ -11,6 +11,7 @@ import datetime
 import sched, time
 from bs4 import BeautifulSoup
 from collections import OrderedDict as od
+import pyttsx3
 
 
 #STACKOVERFLOW MAGIC by Ji Wei (https://stackoverflow.com/questions/47131361/diff-between-two-dataframes-in-pandas)
@@ -113,7 +114,7 @@ def diff_func(df1, df2, uid, dedupe=True, labels=('df1', 'df2'), drop=[]):
     return dict_result
 
 
-#Scheduler using sched
+#Scheduler using sched by Nosklo https://stackoverflow.com/questions/474528/what-is-the-best-way-to-repeatedly-execute-a-function-every-x-seconds
 s = sched.scheduler(time.time, time.sleep)
 def search_premarket(sc):
     #print("Searching Bezinga Premarket Changes")
@@ -123,6 +124,7 @@ def search_premarket(sc):
     df2 = tables[table_index]
 
     difference = diff_func(df1, df2, uid)
+    newStock = difference[uid].tolist()
     #print(difference['df2_only'])
     if bool(difference['df2_only'].empty):
         print("None")
@@ -136,40 +138,58 @@ def search_premarket(sc):
         print(df2)
         print("\n")
 
-        print(datetime.datetime.now())
+        #Text to Speech
+        engine = pyttsx3.init()
+        text = newStock
+        engine.say(text)
+        engine.runAndWait()
+
+        #Timestamp and ouput
+        dtt = datetime.datetime.now()
+        print(dtt)
         print(difference['df2_only'])
         print("\n\n")
+
+        #Write to file
+        f = open(file, "a")
+        for stock in newStock:
+            tss = dtt + ' - ' + stock 
+            f.writeline(tss)
+        f.close()
+
 
     df1 = df2
 
     s.enter(waitTime, 1, search_premarket, (s,))
 
-#TODO
-#add timestamp
-#add txt file output
 try:
     #Getting Data & Preprocessing
     waitTime = int(sys.argv[2])
-    if sys.argv[1] == 1:
+    if sys.argv[1] == 'm':
+        message = "Running Market Mover Search..."
         url = "https://www.benzinga.com/movers"
         table_index = 0
         uid = 'Symbol'
+        file = 'market.txt'
     else:
+        message = "Running Premarket Gapper Search..."
         url = "https://www.benzinga.com/premarket/"
         table_index = 5
         uid = 'Stock'
+        file = 'premarket.txt'
 
+    print(message)
     #Sound Settings
     duration = 800  # milliseconds
     freq = 440  # Hz
 
     tables = pd.read_html(url)
     df1 = tables[table_index]
-    
+
     s.enter(waitTime, 1, search_premarket, (s,))
     s.run()
 except IndexError:
-    raise SystemExit(f"Usage: {sys.argv[0]} <1 (market), 2(premarket)> <sleep time>")
+    raise SystemExit(f"Usage: {sys.argv[0]} <'m' (market) or  'p'(premarket)> <sleep time>")
 
 except KeyError:
     winsound.Beep(freq, duration)
