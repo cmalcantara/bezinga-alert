@@ -7,7 +7,7 @@ import pandas as pd
 import winsound
 import requests
 import sys
-import datetime
+from datetime import datetime
 import sched, time
 from bs4 import BeautifulSoup
 from collections import OrderedDict as od
@@ -124,13 +124,14 @@ def search_premarket(sc):
     df2 = tables[table_index]
 
     difference = diff_func(df1, df2, uid)
-    newStock = difference[uid].tolist()
+    df3 = difference['df2_only']
+    newStock = df3[uid].tolist()
     #print(difference['df2_only'])
-    if bool(difference['df2_only'].empty):
-        dtt = datetime.datetime.now()
-        print(dtt + ' - ' + "None")
+    dtt = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    if bool(df3.empty):
+        print(dtt + "- None")
     else:
-        winsound.Beep(freq, duration)
+        #winsound.Beep(freq, duration)
         #Testing the input data
         print("1m ago stocks: ")
         print(df1)
@@ -146,16 +147,14 @@ def search_premarket(sc):
         engine.runAndWait()
 
         #Timestamp and ouput
-        dtt = datetime.datetime.now()
         print(dtt)
-        print(difference['df2_only'])
+        print(df3)
         print("\n\n")
 
         #Write to file
         f = open(file, "a")
         for stock in newStock:
-            tss = dtt + ' - ' + stock 
-            f.writeline(tss)
+            f.writelines(dtt + ' - ' + stock + '\n')
         f.close()
 
 
@@ -178,11 +177,11 @@ try:
         table_index = 5
         uid = 'Stock'
         file = 'premarket.txt'
-
-    print(message)
     #Sound Settings
     duration = 800  # milliseconds
     freq = 440  # Hz
+
+    print(message)
 
     tables = pd.read_html(url)
     df1 = tables[table_index]
@@ -194,3 +193,5 @@ except IndexError:
 
 except KeyError:
     winsound.Beep(freq, duration)
+    s.enter(waitTime, 1, search_premarket, (s,))
+    s.run()
