@@ -119,6 +119,7 @@ s = sched.scheduler(time.time, time.sleep)
 def search_premarket(sc):
     #print("Searching Bezinga Premarket Changes")
 
+
     global df1
     tables = pd.read_html(url)
     df2 = tables[table_index]
@@ -128,28 +129,51 @@ def search_premarket(sc):
     newStock = df3[uid].tolist()
     #print(difference['df2_only'])
     dtt = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    if bool(df3.empty):
-        print(dtt + "- None")
+
+    #Comparing %Change with sleep time ago
+    #Sort
+    sdf1 = df1.sort_values('Stock')
+    sdf2 = df2.sort_values('Stock')
+    #New Table, clean values
+    df_change = pd.merge(sdf1[['Stock', '% Change']], sdf2[['Stock', '% Change']], how='left', on='Stock')
+    df_change['% Change_x'] = df_change['% Change_x'].str.replace("%","")
+    df_change['% Change_x'] = df_change['% Change_x'].astype(float)
+    df_change['% Change_y'] = df_change['% Change_y'].str.replace("%","")
+    df_change['% Change_y'] = df_change['% Change_y'].astype(float)
+    df_change['% Diff'] = df_change['% Change_y'] - df_change['% Change_x']
+    df_filter = df_change['% Diff']>=fil_val
+    df_all = df_change[df_filter]
+
+    #Text to Speech
+    engine = pyttsx3.init()
+
+    if bool(df3.empty) and bool(df_all.empty):
+        print(dtt + " - None")
+    #If only no new stocks, but %changes
     else:
         #winsound.Beep(freq, duration)
         #Testing the input data
-        print("1m ago stocks: ")
-        print(df1)
-        print("\n")
-        print("current stocks: ")
-        print(df2)
-        print("\n")
-
-        #Text to Speech
-        engine = pyttsx3.init()
-        text = newStock
-        engine.say(text)
-        engine.runAndWait()
+        #print("1m ago stocks: ")
+        #print(df1)
+        #print("\n")
+        #print("current stocks: ")
+        #print(df2)
+        #print("\n")
+        if bool(df3.empty):
+            print("Increased %: ")
+            print(dtt)
+            print(df_all)
+            text = df_all['% Diff'].tolist()
+            engine.say(text)
+            engine.runAndWait()
 
         #Timestamp and ouput
         print(dtt)
         print(df3)
-        print("\n\n")
+        print("\n")
+        text = newStock
+        engine.say(text)
+        engine.runAndWait()
 
         #Write to file
         f = open(file, "a")
@@ -161,7 +185,8 @@ def search_premarket(sc):
     df1 = df2
 
     s.enter(waitTime, 1, search_premarket, (s,))
-
+# TODO add a scanner for increase in %Change by 5%
+# sort by stock name, subtract %, filter new stocks, return > 5%
 try:
     #Getting Data & Preprocessing
     waitTime = int(sys.argv[2])
@@ -177,10 +202,12 @@ try:
         table_index = 5
         uid = 'Stock'
         file = 'premarket.txt'
+
     #Sound Settings
     duration = 800  # milliseconds
     freq = 440  # Hz
 
+    fil_val = 3.00
     print(message)
 
     tables = pd.read_html(url)
